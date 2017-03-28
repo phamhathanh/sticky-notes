@@ -1,0 +1,22 @@
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+#title-bar {
+    -webkit-app-region: drag;
+    flex: 0 1 auto;
+}
+
+.bar-button {
+    -webkit-app-region: no-drag;
+    padding: 8px;
+}
+
+.bar-button > i {
+    color: black;
+}
+
+#content {
+    flex: 1 1 auto;
+}

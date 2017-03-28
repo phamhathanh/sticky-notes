@@ -5,8 +5,8 @@ let mainWindow;
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        height: 600,
-        width: 800,
+        width: 200,
+        height: 200,
         backgroundColor: '#2e2c29',
         frame: false
     });
