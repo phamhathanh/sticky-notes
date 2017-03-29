@@ -1,19 +1,34 @@
 'use strict';
 
-const { app, ipcMain, dialog, BrowserWindow } = require('electron')
-let mainWindow;
+const { app, ipcMain, dialog, BrowserWindow } = require('electron');
+const path = require('path');
+const url = require('url');
+
+let window;
 
 function createWindow() {
-    mainWindow = new BrowserWindow({
+    window = new BrowserWindow({
+        show: false,
         width: 200,
         height: 200,
-        backgroundColor: '#2e2c29',
-        frame: false
+        backgroundColor: '#f0e68c',
+        frame: false,
+        minimizable: false,
+        maximizable: false,
+        closable: false,
+        hasShadow: true
     });
-    mainWindow.once('ready-to-show', () => {
-        mainWindow.show()
+    window.once('ready-to-show', () => {
+        window.show();
     });
-    mainWindow.loadURL('file://' + __dirname + '/app/index.html');
+    window.loadURL(url.format({
+        pathname: path.join(__dirname, '/app/index.html'),
+        protocol: 'file:',
+        slashes: true
+    }));
+    window.webContents.on('did-finish-load', () => {
+        window.webContents.send('content', 'content goes here');
+    });
 }
 
 app.on('ready', createWindow);
