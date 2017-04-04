@@ -64,7 +64,7 @@ let noteCount = 0;
 function createWindow(note) {
     const window = new BrowserWindow({
         show: false,
-        x: 20+noteCount*220,
+        x: 20 + noteCount * 220,
         y: 20,
         width: 200,
         height: 200,
@@ -121,7 +121,7 @@ function saveNotesAndExit() {
     writeToFile(noteArray, () => mainWindow.destroy());
 }
 
-ipcMain.on('delete', function (event, message) {
+ipcMain.on('delete', (event, message) => {
     const window = notes[message.id].window;
     window.destroy();
     delete notes[message.id];
@@ -130,6 +130,17 @@ ipcMain.on('delete', function (event, message) {
     // Race condition?
     if (noteCount === 0)
         saveNotesAndExit();
+});
+
+ipcMain.on('add', (event, message) => {
+    notes[noteCount] = {
+        text: '',
+        window: createWindow({
+            id: noteCount,
+            text: ''
+        })
+    };
+    // TODO: Randomize id.
 });
 
 app.on('ready', initialize);

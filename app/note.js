@@ -23,7 +23,12 @@ window.onbeforeunload = event => {
 function deleteNote() {
     const isConfirmed = confirm('Are you sure?');
     // TODO: Use another form of confirmation.
+    // TODO: Do not prompt when empty.
     if (!isConfirmed)
         return;
     ipcRenderer.send('delete', { id });
+}
+
+function addNote() {
+    ipcRenderer.send('add');
 }
