@@ -3,16 +3,15 @@
 const { ipcRenderer } = require('electron');
 
 let id;
-ipcRenderer.on('load-content', function (event, message) {
-    const note = message;
-    $('#content').val(note.text);
-    id = note.id;
+ipcRenderer.on('load-content', (event, _id, text) => {
+    $('#content').val(text);
+    id = _id;
 });
 
 ipcRenderer.on('save-content', saveContent);
 function saveContent() {
     const text = $('#content').val();
-    ipcRenderer.send('save-content', { id, text });
+    ipcRenderer.send('save-content', id, text);
 }
 
 window.onbeforeunload = event => {
@@ -26,7 +25,7 @@ function deleteNote() {
     // TODO: Do not prompt when empty.
     if (!isConfirmed)
         return;
-    ipcRenderer.send('delete', { id });
+    ipcRenderer.send('delete', id);
 }
 
 function addNote() {

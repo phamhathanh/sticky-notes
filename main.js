@@ -10,7 +10,8 @@ const dataPath = //path.join(app.getPath(documents), '/sticky_notes/');
 const DATA_FILE_NAME = 'data.json';
 
 let mainWindow;
-const notes = {};
+
+app.on('ready', initialize);
 function initialize() {
     mainWindow = new BrowserWindow({
         show: true,
@@ -35,11 +36,9 @@ function initialize() {
         else
             noteArray = JSON.parse(data);
 
-        noteArray.forEach(note => {
-            notes[note.id] = {
-                text: note.text,
-                window: createWindow(note)
-            };
+        noteArray.forEach(noteData => {
+            const { id, text } = noteData;
+            createWindow(id, text);
         });
     });
 }
@@ -60,8 +59,9 @@ function writeToFile(content, onComplete) {
     });
 }
 
+const notes = {};
 let noteCount = 0;
-function createWindow(note) {
+function createWindow(id, text) {
     const window = new BrowserWindow({
         show: false,
         x: 20 + noteCount * 220,
@@ -77,8 +77,10 @@ function createWindow(note) {
         skipTaskbar: true,
         parent: mainWindow
     });
-    noteCount++;
     // TODO: Wrap new line, using screen resolution.
+    
+    notes[id] = { text, window };
+    noteCount++;
 
     window.once('ready-to-show', () => {
         window.show();
@@ -89,16 +91,16 @@ function createWindow(note) {
         slashes: true
     }));
     window.webContents.on('did-finish-load', () => {
-        window.webContents.send('load-content', note);
+        window.webContents.send('load-content', id, text);
     });
 
     return window;
 }
 
 let isClosing = false;
-ipcMain.on('save-content', (event, message) => {
-    const note = notes[message.id];
-    note.text = message.text;
+ipcMain.on('save-content', (event, id, text) => {
+    const note = notes[id];
+    note.text = text;
     note.window.destroy();
     note.closed = true;
     noteCount--;
@@ -121,10 +123,10 @@ function saveNotesAndExit() {
     writeToFile(noteArray, () => mainWindow.destroy());
 }
 
-ipcMain.on('delete', (event, message) => {
-    const window = notes[message.id].window;
+ipcMain.on('delete', (event, id) => {
+    const window = notes[id].window;
     window.destroy();
-    delete notes[message.id];
+    delete notes[id];
     noteCount--;
 
     // Race condition?
@@ -132,15 +134,7 @@ ipcMain.on('delete', (event, message) => {
         saveNotesAndExit();
 });
 
-ipcMain.on('add', (event, message) => {
-    notes[noteCount] = {
-        text: '',
-        window: createWindow({
-            id: noteCount,
-            text: ''
-        })
-    };
+ipcMain.on('add', event => {
+    createWindow(noteCount, '');
     // TODO: Randomize id.
 });
-
-app.on('ready', initialize);
