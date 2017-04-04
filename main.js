@@ -44,6 +44,14 @@ function initialize() {
     });
 }
 
+function closeAll() {
+    Object.values(notes)
+        .filter(note => !note.closed)
+        .forEach(note => {
+            note.window.webContents.send('save-content');
+        });
+}
+
 function writeToFile(content, onComplete) {
     fs.writeFile(DATA_FILE_NAME, JSON.stringify(content), function (error) {
         if (error)
@@ -84,27 +92,21 @@ function createWindow(note) {
         window.webContents.send('load-content', note);
     });
 
-    window.on('closed', () => {
-        closeAll();
-    });
-
     return window;
 }
 
-function closeAll() {
-    Object.values(notes)
-        .filter(note => !note.window.isHidden)
-        .forEach(note => {
-            note.window.hide();
-            note.window.webContents.send('save-content');
-        });
-}
-
-ipcMain.on('save-content', function (event, message) {
+let isClosing = false;
+ipcMain.on('save-content', (event, message) => {
     const note = notes[message.id];
     note.text = message.text;
-    note.window.isHidden = true;
+    note.window.destroy();
+    note.closed = true;
     noteCount--;
+
+    if (!isClosing) {
+        isClosing = true;
+        closeAll();
+    }
 
     // Race condition?
     if (noteCount === 0)
@@ -118,5 +120,16 @@ function saveNotesAndExit() {
     }));
     writeToFile(noteArray, () => mainWindow.destroy());
 }
+
+ipcMain.on('delete', function (event, message) {
+    const window = notes[message.id].window;
+    window.destroy();
+    delete notes[message.id];
+    noteCount--;
+
+    // Race condition?
+    if (noteCount === 0)
+        saveNotesAndExit();
+});
 
 app.on('ready', initialize);

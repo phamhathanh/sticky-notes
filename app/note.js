@@ -9,9 +9,21 @@ ipcRenderer.on('load-content', function (event, message) {
     id = note.id;
 });
 
+ipcRenderer.on('save-content', saveContent);
 function saveContent() {
-    ipcRenderer.send('save-content', { id: id, text: $('#content').val() });
+    const text = $('#content').val();
+    ipcRenderer.send('save-content', { id, text });
 }
 
-ipcRenderer.on('save-content', saveContent);
-window.onbeforeunload = saveContent;
+window.onbeforeunload = event => {
+    saveContent();
+    event.returnValue = false;
+};
+
+function deleteNote() {
+    const isConfirmed = confirm('Are you sure?');
+    // TODO: Use another form of confirmation.
+    if (!isConfirmed)
+        return;
+    ipcRenderer.send('delete', { id });
+}

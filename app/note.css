@@ -14,7 +14,7 @@ body {
 }
 
 .bar-button > i {
-    color: black;
+    color: rgba(0, 0, 0, 0.87);
 }
 
 #content {
