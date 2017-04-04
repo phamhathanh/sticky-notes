@@ -1,6 +1,7 @@
 'use strict';
 
-const { app, ipcMain, dialog, BrowserWindow } = require('electron');
+const electron = require('electron');
+const { app, ipcMain, BrowserWindow } = electron;
 const path = require('path');
 const url = require('url');
 const fs = require('fs');
@@ -10,6 +11,7 @@ const dataPath = //path.join(app.getPath(documents), '/sticky_notes/');
 const DATA_FILE_NAME = 'data.json';
 
 let mainWindow;
+let screenWidth;
 
 app.on('ready', initialize);
 function initialize() {
@@ -26,6 +28,8 @@ function initialize() {
         event.preventDefault();
         closeAll();
     });
+
+    screenWidth = electron.screen.getPrimaryDisplay().workAreaSize.width;
 
     fs.readFile(DATA_FILE_NAME, (error, data) => {
         let noteArray;
@@ -62,10 +66,12 @@ function writeToFile(content, onComplete) {
 const notes = {};
 let noteCount = 0;
 function createWindow(id, text) {
+    const numberOfNotesPerRow = ~~(screenWidth / 220);
+    const y = 20 + 220 * ~~(noteCount / numberOfNotesPerRow),
+        x = 20 + 220 * (noteCount % numberOfNotesPerRow);
     const window = new BrowserWindow({
+        x, y,
         show: false,
-        x: 20 + noteCount * 220,
-        y: 20,
         width: 200,
         height: 200,
         backgroundColor: '#f0e68c',
@@ -77,8 +83,7 @@ function createWindow(id, text) {
         skipTaskbar: true,
         parent: mainWindow
     });
-    // TODO: Wrap new line, using screen resolution.
-    
+
     notes[id] = { text, window };
     noteCount++;
 
