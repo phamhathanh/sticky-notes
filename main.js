@@ -17,17 +17,20 @@ function initialize() {
         width: 0,
         height: 0,
         frame: false,
-        transparent: true
+        transparent: true,
+        title: 'Sticky Notes'
+    });
+
+    mainWindow.on('close', event => {
+        event.preventDefault();
+        closeAll();
     });
 
     fs.readFile(DATA_FILE_NAME, (error, data) => {
         let noteArray;
         if (error) {
             noteArray = [{ id: 0, text: '' }];
-            fs.writeFile(DATA_FILE_NAME, JSON.stringify(noteArray), function (error) {
-                if (error)
-                    console.log(error);
-            });
+            writeToFile(noteArray);
         }
         else
             noteArray = JSON.parse(data);
@@ -41,10 +44,20 @@ function initialize() {
     });
 }
 
+function writeToFile(content, onComplete) {
+    fs.writeFile(DATA_FILE_NAME, JSON.stringify(content), function (error) {
+        if (error)
+            console.log(error);
+        else if (onComplete) onComplete();
+    });
+}
+
+let noteCount = 0;
 function createWindow(note) {
-    // TODO: Position.
     const window = new BrowserWindow({
         show: false,
+        x: 20+noteCount*220,
+        y: 20,
         width: 200,
         height: 200,
         backgroundColor: '#f0e68c',
@@ -56,6 +69,9 @@ function createWindow(note) {
         skipTaskbar: true,
         parent: mainWindow
     });
+    noteCount++;
+    // TODO: Wrap new line, using screen resolution.
+
     window.once('ready-to-show', () => {
         window.show();
     });
@@ -77,7 +93,7 @@ function createWindow(note) {
 
 function closeAll() {
     Object.values(notes)
-        .filter(note => !note.saved)
+        .filter(note => !note.window.isHidden)
         .forEach(note => {
             note.window.hide();
             note.window.webContents.send('save-content');
@@ -87,24 +103,20 @@ function closeAll() {
 ipcMain.on('save-content', function (event, message) {
     const note = notes[message.id];
     note.text = message.text;
-    note.saved = true;
+    note.window.isHidden = true;
+    noteCount--;
 
     // Race condition?
-    const notesLeft = Object.values(notes).filter(note => !note.saved).length;
-    if (notesLeft === 0)
-        saveNotes();
+    if (noteCount === 0)
+        saveNotesAndExit();
 });
 
-function saveNotes() {
+function saveNotesAndExit() {
     const noteArray = Object.keys(notes).map(key => ({
         id: key,
         text: notes[key].text
     }));
-    fs.writeFile(DATA_FILE_NAME, JSON.stringify(noteArray), function (error) {
-        if (error)
-            console.log(error);
-        mainWindow.close();
-    });
+    writeToFile(noteArray, () => mainWindow.destroy());
 }
 
 app.on('ready', initialize);

@@ -9,10 +9,9 @@ ipcRenderer.on('load-content', function (event, message) {
     id = note.id;
 });
 
-ipcRenderer.on('save-content', (event, message) => {
+function saveContent() {
     ipcRenderer.send('save-content', { id: id, text: $('#content').val() });
-});
+}
 
-window.onbeforeunload = event => {
-    ipcRenderer.send('save-content', { id: id, text: $('#content').val() });
-};
+ipcRenderer.on('save-content', saveContent);
+window.onbeforeunload = saveContent;
