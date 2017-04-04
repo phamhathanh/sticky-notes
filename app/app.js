@@ -2,6 +2,17 @@
 
 const { ipcRenderer } = require('electron');
 
-ipcRenderer.on('content', function (event, message) {
-    $('#content').text(message);
+let id;
+ipcRenderer.on('load-content', function (event, message) {
+    const note = message;
+    $('#content').val(note.text);
+    id = note.id;
 });
+
+ipcRenderer.on('save-content', (event, message) => {
+    ipcRenderer.send('save-content', { id: id, text: $('#content').val() });
+});
+
+window.onbeforeunload = event => {
+    ipcRenderer.send('save-content', { id: id, text: $('#content').val() });
+};

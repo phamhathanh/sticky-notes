@@ -7,9 +7,10 @@ const fs = require('fs');
 
 const dataPath = //path.join(app.getPath(documents), '/sticky_notes/');
     app.getAppPath();
+const DATA_FILE_NAME = 'data.json';
 
 let mainWindow;
-
+const notes = {};
 function initialize() {
     mainWindow = new BrowserWindow({
         show: true,
@@ -19,27 +20,28 @@ function initialize() {
         transparent: true
     });
 
-    const DATA_FILE_NAME = 'data.json';
     fs.readFile(DATA_FILE_NAME, (error, data) => {
-        let notes;
+        let noteArray;
         if (error) {
-            notes = [{ text: '' }];
-            fs.writeFile(DATA_FILE_NAME, JSON.stringify(notes), function (error) {
+            noteArray = [{ id: 0, text: '' }];
+            fs.writeFile(DATA_FILE_NAME, JSON.stringify(noteArray), function (error) {
                 if (error)
                     console.log(error);
             });
         }
         else
-            notes = JSON.parse(data);
+            noteArray = JSON.parse(data);
 
-        notes.forEach(note => {
-            createWindow(note.text);
+        noteArray.forEach(note => {
+            notes[note.id] = {
+                text: note.text,
+                window: createWindow(note)
+            };
         });
-        // TODO: Create a map with the objects.
     });
 }
 
-function createWindow(text) {
+function createWindow(note) {
     // TODO: Position.
     const window = new BrowserWindow({
         show: false,
@@ -63,11 +65,46 @@ function createWindow(text) {
         slashes: true
     }));
     window.webContents.on('did-finish-load', () => {
-        window.webContents.send('content', text);
+        window.webContents.send('load-content', note);
     });
 
-    // TODO: Close one = close all.
-    // Save content when close.
+    window.on('closed', () => {
+        closeAll();
+    });
+
+    return window;
+}
+
+function closeAll() {
+    Object.values(notes)
+        .filter(note => !note.saved)
+        .forEach(note => {
+            note.window.hide();
+            note.window.webContents.send('save-content');
+        });
+}
+
+ipcMain.on('save-content', function (event, message) {
+    const note = notes[message.id];
+    note.text = message.text;
+    note.saved = true;
+
+    // Race condition?
+    const notesLeft = Object.values(notes).filter(note => !note.saved).length;
+    if (notesLeft === 0)
+        saveNotes();
+});
+
+function saveNotes() {
+    const noteArray = Object.keys(notes).map(key => ({
+        id: key,
+        text: notes[key].text
+    }));
+    fs.writeFile(DATA_FILE_NAME, JSON.stringify(noteArray), function (error) {
+        if (error)
+            console.log(error);
+        mainWindow.close();
+    });
 }
 
 app.on('ready', initialize);
