@@ -10,7 +10,7 @@ ipcRenderer.on('load-content', (event, _id, text) => {
 
 ipcRenderer.on('save-content', saveContent);
 function saveContent() {
-    const text = $('#content').val();
+    const text = getContent();
     ipcRenderer.send('save-content', id, text);
 }
 
@@ -19,12 +19,18 @@ window.onbeforeunload = event => {
     event.returnValue = false;
 };
 
+function getContent() {
+    return $('#content').val();
+}
+
 function deleteNote() {
-    const isConfirmed = confirm('Are you sure?');
-    // TODO: Use another form of confirmation.
-    // TODO: Do not prompt when empty.
-    if (!isConfirmed)
-        return;
+    const text = getContent();
+    if (text !== '') {
+        const isConfirmed = confirm('Are you sure?');
+        // TODO: Use another form of confirmation.
+        if (!isConfirmed)
+            return;
+    }
     ipcRenderer.send('delete', id);
 }
 
