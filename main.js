@@ -9,8 +9,6 @@ const fs = require('fs');
 const dataFolder = path.join(app.getPath('documents'), 'sticky_notes');
 const dataFile = path.join(dataFolder, 'data.json');
 
-// Also check if developer options is enabled in the build.
-
 let mainWindow;
 let screenWidth;
 
@@ -34,25 +32,31 @@ function initialize() {
 
     fs.readFile(dataFile, (error, data) => {
         let noteArray;
-        if (error) {
-            noteArray = [{ id: 0, text: '' }];
-
-            fs.mkdir(dataFolder, err => {
-                if (err && err.code !== 'EEXIST') {
-                    console.log(err);
-                    return;
-                }
-                writeToFile(noteArray);
-            });
-        }
+        if (error)
+            noteArray = seedData();
         else
             noteArray = JSON.parse(data);
+
+        if (noteArray.length === 0)
+            noteArray = seedData();
 
         noteArray.forEach(noteData => {
             const { id, text } = noteData;
             createWindow(id, text);
         });
     });
+}
+
+function seedData() {
+    const noteArray = [{ id: 0, text: '' }];
+    fs.mkdir(dataFolder, err => {
+        if (err && err.code !== 'EEXIST') {
+            console.log(err);
+            return;
+        }
+        writeToFile(noteArray);
+    });
+    return noteArray;
 }
 
 function closeAll() {
@@ -133,7 +137,9 @@ function saveNotesAndExit() {
         id: key,
         text: notes[key].text
     }));
-    writeToFile(noteArray, () => mainWindow.destroy());
+    writeToFile(noteArray, () => {
+        mainWindow.destroy();
+    });
 }
 
 ipcMain.on('delete', (event, id) => {
@@ -151,3 +157,8 @@ ipcMain.on('add', event => {
     createWindow(noteCount, '');
     // TODO: Randomize id.
 });
+// TODO: Split to js files.
+
+app.on('window-all-closed', () => {
+    app.quit();
+})
