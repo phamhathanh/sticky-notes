@@ -6,9 +6,10 @@ const path = require('path');
 const url = require('url');
 const fs = require('fs');
 
-const dataPath = //path.join(app.getPath(documents), '/sticky_notes/');
-    app.getAppPath();
-const DATA_FILE_NAME = 'data.json';
+const dataFolder = path.join(app.getPath('documents'), 'sticky_notes');
+const dataFile = path.join(dataFolder, 'data.json');
+
+// Also check if developer options is enabled in the build.
 
 let mainWindow;
 let screenWidth;
@@ -31,11 +32,18 @@ function initialize() {
 
     screenWidth = electron.screen.getPrimaryDisplay().workAreaSize.width;
 
-    fs.readFile(DATA_FILE_NAME, (error, data) => {
+    fs.readFile(dataFile, (error, data) => {
         let noteArray;
         if (error) {
             noteArray = [{ id: 0, text: '' }];
-            writeToFile(noteArray);
+
+            fs.mkdir(dataFolder, err => {
+                if (err && err.code !== 'EEXIST') {
+                    console.log(err);
+                    return;
+                }
+                writeToFile(noteArray);
+            });
         }
         else
             noteArray = JSON.parse(data);
@@ -56,7 +64,7 @@ function closeAll() {
 }
 
 function writeToFile(content, onComplete) {
-    fs.writeFile(DATA_FILE_NAME, JSON.stringify(content), function (error) {
+    fs.writeFile(dataFile, JSON.stringify(content), function (error) {
         if (error)
             console.log(error);
         else if (onComplete) onComplete();
