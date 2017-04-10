@@ -21,6 +21,7 @@ body {
     flex: 1 1 auto;
     border: none;
     resize: none;
+    padding: 6px 10px;
 }
 #content:focus {
     outline: none;

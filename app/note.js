@@ -37,3 +37,5 @@ function deleteNote() {
 function addNote() {
     ipcRenderer.send('add');
 }
+
+// TODO: Hide the bar when not focus.
